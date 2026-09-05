@@ -1,39 +1,4 @@
-[9/4/2026 9:05 PM] Roi Roi: <div class="equipo">
-            ${logoHTML(local.logo)}
-            <span>${local.nombre}</span>
-          </div>
-
-          <div class="score">
-            ${goles(m,"home")} - ${goles(m,"away")}
-          </div>
-
-          <div class="equipo visitante">
-            <span>${visita.nombre}</span>
-            ${logoHTML(visita.logo)}
-          </div>
-
-        </div>
-
-        <div class="estado">● EN VIVO</div>
-
-      </div>`;
-    }).join("");
-
-  }catch(error){
-    contenedor.innerHTML =
-      <div class="mensaje">Actualizando marcador...</div>;
-  }
-}
-
-cargar();
-
-/* Actualiza automáticamente cada 60 segundos */
-setInterval(cargar,60000);
-</script>
-
-</body>
-</html>
-[9/4/2026 9:05 PM] Roi Roi: <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -41,224 +6,32 @@ setInterval(cargar,60000);
 <title>Marcador en Vivo</title>
 
 <style>
-*{box-sizing:border-box}
 html,body{
   margin:0;
   padding:0;
   background:transparent;
   font-family:Arial,sans-serif;
-  color:white;
 }
-
-#marcador{
+.contenedor{
   width:100%;
   max-width:900px;
   margin:auto;
-  padding:10px;
-}
-
-.titulo{
-  text-align:center;
-  font-weight:900;
-  font-size:22px;
-  margin-bottom:10px;
-}
-
-.partido{
-  background:linear-gradient(135deg,#071526,#101c2b);
-  border-radius:15px;
-  margin-bottom:10px;
-  padding:10px 16px;
-  box-shadow:0 4px 12px rgba(0,0,0,.35);
-}
-
-.liga{
-  font-size:12px;
-  font-weight:bold;
-  opacity:.75;
-  margin-bottom:7px;
-}
-
-.fila{
-  display:grid;
-  grid-template-columns:1fr 90px 1fr;
-  align-items:center;
-  gap:8px;
-}
-
-.equipo{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-size:17px;
-  font-weight:800;
-}
-
-.visitante{
-  justify-content:flex-end;
-  text-align:right;
-}
-
-.logo{
-  width:34px;
-  height:34px;
-  object-fit:contain;
-}
-
-.score{
-  text-align:center;
-  font-size:27px;
-  font-weight:900;
-}
-
-.estado{
-  text-align:center;
-  font-size:11px;
-  margin-top:6px;
-  color:#55ff88;
-  font-weight:bold;
-}
-
-.mensaje{
-  text-align:center;
-  padding:25px;
-  font-weight:bold;
-}
-
-.credito{
-  text-align:center;
-  margin-top:8px;
-  font-size:11px;
-}
-
-.credito a{
-  color:white;
-  text-decoration:none;
-  opacity:.7;
 }
 </style>
 </head>
 
 <body>
 
-<div id="marcador">
-  <div class="titulo">⚽ PARTIDOS EN VIVO</div>
-  <div id="partidos" class="mensaje">Buscando partidos...</div>
+<div class="contenedor">
 
-  <div class="credito">
-    Powered by
-    <a href="https://sportscore.com/" rel="dofollow">SportScore</a>
+  <div data-sportscore="tracker"
+       data-sport="football"
+       data-team="real-madrid">
   </div>
+
 </div>
 
-<script>
-const API =
-"https://sportscore.com/api/widget/matches/?sport=football&limit=50";
+<script src="https://sportscore.com/embed.js" async></script>
 
-function texto(obj,...nombres){
-  for(const n of nombres){
-    if(obj && obj[n] !== undefined && obj[n] !== null) return obj[n];
-  }
-  return "";
-}
-
-function equipo(match,lado){
-  const obj =
-    match[lado] ||
-    match[lado+"Team"] ||
-    match[lado+"_team"] ||
-    {};
-
-  return {
-    nombre:
-      texto(obj,"name","shortName","short_name") ||
-      texto(match,lado+"_name",lado+"Name") ||
-      (lado==="home" ? "Local" : "Visitante"),
-
-    logo:
-      texto(obj,"logo","image","image_url","logo_url") ||
-      texto(match,lado+"_logo",lado+"Logo") ||
-      ""
-  };
-}
-
-function goles(match,lado){
-  const score = match.score  match.scores  {};
-
-  let valor =
-    texto(match,lado+"_score",lado+"Score") ||
-    texto(score,lado) ||
-    texto(score,lado+"_score");
-
-  if(valor === "") valor = 0;
-  return valor;
-}
-
-function liga(match){
-  const c =
-    match.competition ||
-    match.league ||
-    match.tournament ||
-    {};
-
-  return texto(c,"name","title") ||
-         texto(match,"competition_name","league_name") ||
-         "Fútbol";
-}
-
-function estado(match){
-  return String(
-    texto(match,"status","state","match_status") || ""
-  );
-}
-
-function esEnVivo(match){
-  const s = estado(match).toLowerCase();
-
-  return (
-    s.includes("live") ||
-    s.includes("progress") ||
-    s.includes("half") ||
-    s.includes("1st") ||
-    s.includes("2nd") ||
-    s === "ht"
-  );
-}
-
-function logoHTML(url){
-  return url
-    ? <img class="logo" src="${url}" onerror="this.style.display='none'">
-    : "";
-}
-
-async function cargar(){
-  const contenedor = document.getElementById("partidos");
-
-  try{
-    const respuesta = await fetch(API,{cache:"no-store"});
-
-    if(!respuesta.ok) throw new Error("API");
-
-    const datos = await respuesta.json();
-    const todos = datos.matches || [];
-
-    let partidos = todos.filter(esEnVivo);
-
-    if(partidos.length === 0){
-      contenedor.innerHTML =
-        <div class="mensaje">No hay partidos en vivo ahora mismo.</div>;
-      return;
-    }
-
-    contenedor.className = "";
-
-    contenedor.innerHTML = partidos.map(m=>{
-      const local = equipo(m,"home");
-      const visita = equipo(m,"away");
-
-      return `
-      <div class="partido">
-
-        <div class="liga">${liga(m)}</div>
-
-        <div class="fila">
+</body>
+</html>
