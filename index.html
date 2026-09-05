@@ -1,8 +1,43 @@
-<!DOCTYPE html>
+[9/4/2026 9:05 PM] Roi Roi: <div class="equipo">
+            ${logoHTML(local.logo)}
+            <span>${local.nombre}</span>
+          </div>
+
+          <div class="score">
+            ${goles(m,"home")} - ${goles(m,"away")}
+          </div>
+
+          <div class="equipo visitante">
+            <span>${visita.nombre}</span>
+            ${logoHTML(visita.logo)}
+          </div>
+
+        </div>
+
+        <div class="estado">● EN VIVO</div>
+
+      </div>`;
+    }).join("");
+
+  }catch(error){
+    contenedor.innerHTML =
+      <div class="mensaje">Actualizando marcador...</div>;
+  }
+}
+
+cargar();
+
+/* Actualiza automáticamente cada 60 segundos */
+setInterval(cargar,60000);
+</script>
+
+</body>
+</html>
+[9/4/2026 9:05 PM] Roi Roi: <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Marcador en Vivo</title>
 
 <style>
@@ -15,45 +50,48 @@ html,body{
   color:white;
 }
 
-#app{
-  width:760px;
-  padding:15px;
+#marcador{
+  width:100%;
+  max-width:900px;
+  margin:auto;
+  padding:10px;
+}
+
+.titulo{
+  text-align:center;
+  font-weight:900;
+  font-size:22px;
+  margin-bottom:10px;
 }
 
 .partido{
-  background:rgba(12,15,22,.96);
-  border-radius:16px;
-  overflow:hidden;
-  margin-bottom:12px;
-  box-shadow:0 8px 25px rgba(0,0,0,.35);
+  background:linear-gradient(135deg,#071526,#101c2b);
+  border-radius:15px;
+  margin-bottom:10px;
+  padding:10px 16px;
+  box-shadow:0 4px 12px rgba(0,0,0,.35);
 }
 
-.superior{
-  padding:8px 15px;
-  background:#171c27;
-  display:flex;
-  justify-content:space-between;
-  font-size:13px;
+.liga{
+  font-size:12px;
   font-weight:bold;
+  opacity:.75;
+  margin-bottom:7px;
 }
 
-.live{
-  color:#37e584;
-}
-
-.equipos{
+.fila{
   display:grid;
-  grid-template-columns:1fr 110px 1fr;
+  grid-template-columns:1fr 90px 1fr;
   align-items:center;
-  padding:15px;
+  gap:8px;
 }
 
 .equipo{
   display:flex;
   align-items:center;
-  gap:10px;
-  font-weight:bold;
+  gap:8px;
   font-size:17px;
+  font-weight:800;
 }
 
 .visitante{
@@ -62,214 +100,165 @@ html,body{
 }
 
 .logo{
-  width:45px;
-  height:45px;
+  width:34px;
+  height:34px;
   object-fit:contain;
-  background:white;
-  border-radius:50%;
-  padding:4px;
 }
 
-.resultado{
+.score{
   text-align:center;
-  font-size:34px;
+  font-size:27px;
   font-weight:900;
 }
 
-.mensaje{
-  background:rgba(12,15,22,.95);
-  padding:18px;
-  border-radius:14px;
+.estado{
+  text-align:center;
+  font-size:11px;
+  margin-top:6px;
+  color:#55ff88;
   font-weight:bold;
+}
+
+.mensaje{
+  text-align:center;
+  padding:25px;
+  font-weight:bold;
+}
+
+.credito{
+  text-align:center;
+  margin-top:8px;
+  font-size:11px;
+}
+
+.credito a{
+  color:white;
+  text-decoration:none;
+  opacity:.7;
 }
 </style>
 </head>
 
 <body>
 
-<div id="app">
-  <div class="mensaje">Cargando partidos...</div>
+<div id="marcador">
+  <div class="titulo">⚽ PARTIDOS EN VIVO</div>
+  <div id="partidos" class="mensaje">Buscando partidos...</div>
+
+  <div class="credito">
+    Powered by
+    <a href="https://sportscore.com/" rel="dofollow">SportScore</a>
+  </div>
 </div>
 
 <script>
+const API =
+"https://sportscore.com/api/widget/matches/?sport=football&limit=50";
 
-const ligas = [
- {id:"eng.1",nombre:"Premier League"},
- {id:"esp.1",nombre:"LaLiga"},
- {id:"ger.1",nombre:"Bundesliga"},
- {id:"fra.1",nombre:"Ligue 1"}
-];
-
-const equiposPermitidos = {
- "esp.1":["Real Madrid","Barcelona"],
- "ger.1":["Bayern Munich"],
- "fra.1":["Paris Saint-Germain","PSG"]
-};
-
-function permitido(evento,liga){
-
- if(!equiposPermitidos[liga]) return true;
-
- const equipos =
- evento.competitions?.[0]?.competitors || [];
-
- return equipos.some(e =>
-   equiposPermitidos[liga].some(nombre =>
-     (e.team?.displayName || "")
-       .toLowerCase()
-       .includes(nombre.toLowerCase())
-   )
- );
+function texto(obj,...nombres){
+  for(const n of nombres){
+    if(obj && obj[n] !== undefined && obj[n] !== null) return obj[n];
+  }
+  return "";
 }
 
-function crearPartido(evento,nombreLiga){
+function equipo(match,lado){
+  const obj =
+    match[lado] ||
+    match[lado+"Team"] ||
+    match[lado+"_team"] ||
+    {};
 
- const comp = evento.competitions[0];
+  return {
+    nombre:
+      texto(obj,"name","shortName","short_name") ||
+      texto(match,lado+"_name",lado+"Name") ||
+      (lado==="home" ? "Local" : "Visitante"),
 
- const local =
- comp.competitors.find(e=>e.homeAway==="home");
+    logo:
+      texto(obj,"logo","image","image_url","logo_url") ||
+      texto(match,lado+"_logo",lado+"Logo") ||
+      ""
+  };
+}
 
- const visita =
- comp.competitors.find(e=>e.homeAway==="away");
+function goles(match,lado){
+  const score = match.score  match.scores  {};
 
- const estado = comp.status?.type?.state;
+  let valor =
+    texto(match,lado+"_score",lado+"Score") ||
+    texto(score,lado) ||
+    texto(score,lado+"_score");
 
- let textoEstado =
- comp.status?.type?.shortDetail || "";
+  if(valor === "") valor = 0;
+  return valor;
+}
 
- if(estado==="in"){
-   textoEstado =
-   "● EN VIVO " +
-   (comp.status?.displayClock || "");
- }
+function liga(match){
+  const c =
+    match.competition ||
+    match.league ||
+    match.tournament ||
+    {};
 
- return `
- <div class="partido">
+  return texto(c,"name","title") ||
+         texto(match,"competition_name","league_name") ||
+         "Fútbol";
+}
 
-   <div class="superior">
-     <span>${nombreLiga}</span>
-     <span class="${estado==="in"?"live":""}">
-       ${textoEstado}
-     </span>
-   </div>
+function estado(match){
+  return String(
+    texto(match,"status","state","match_status") || ""
+  );
+}
 
-   <div class="equipos">
+function esEnVivo(match){
+  const s = estado(match).toLowerCase();
 
-     <div class="equipo">
-       <img class="logo"
-       src="${local?.team?.logo || ""}">
-       <span>
-       ${local?.team?.shortDisplayName ||
-         local?.team?.displayName || ""}
-       </span>
-     </div>
+  return (
+    s.includes("live") ||
+    s.includes("progress") ||
+    s.includes("half") ||
+    s.includes("1st") ||
+    s.includes("2nd") ||
+    s === "ht"
+  );
+}
 
-     <div class="resultado">
-       ${local?.score ?? "-"}
-       -
-       ${visita?.score ?? "-"}
-     </div>
-
-     <div class="equipo visitante">
-       <span>
-       ${visita?.team?.shortDisplayName ||
-         visita?.team?.displayName || ""}
-       </span>
-
-       <img class="logo"
-       src="${visita?.team?.logo || ""}">
-     </div>
-
-   </div>
-
- </div>
- `;
+function logoHTML(url){
+  return url
+    ? <img class="logo" src="${url}" onerror="this.style.display='none'">
+    : "";
 }
 
 async function cargar(){
+  const contenedor = document.getElementById("partidos");
 
- const app=document.getElementById("app");
+  try{
+    const respuesta = await fetch(API,{cache:"no-store"});
 
- let partidos=[];
+    if(!respuesta.ok) throw new Error("API");
 
- try{
+    const datos = await respuesta.json();
+    const todos = datos.matches || [];
 
-   for(const liga of ligas){
+    let partidos = todos.filter(esEnVivo);
 
-     const url =
-     `https://site.api.espn.com/apis/site/v2/sports/soccer/${liga.id}/scoreboard`;
+    if(partidos.length === 0){
+      contenedor.innerHTML =
+        <div class="mensaje">No hay partidos en vivo ahora mismo.</div>;
+      return;
+    }
 
-     const respuesta =
-     await fetch(url,{cache:"no-store"});
+    contenedor.className = "";
 
-     if(!respuesta.ok) continue;
+    contenedor.innerHTML = partidos.map(m=>{
+      const local = equipo(m,"home");
+      const visita = equipo(m,"away");
 
-     const datos =
-     await respuesta.json();
+      return `
+      <div class="partido">
 
-     for(const evento of datos.events || []){
+        <div class="liga">${liga(m)}</div>
 
-       if(permitido(evento,liga.id)){
-
-         partidos.push({
-           evento,
-           liga:liga.nombre
-         });
-
-       }
-     }
-   }
-
-   partidos.sort((a,b)=>{
-
-     const ea =
-     a.evento.competitions[0]
-     .status.type.state;
-
-     const eb =
-     b.evento.competitions[0]
-     .status.type.state;
-
-     if(ea==="in" && eb!=="in") return -1;
-     if(eb==="in" && ea!=="in") return 1;
-
-     return new Date(a.evento.date) -
-            new Date(b.evento.date);
-   });
-
-   if(partidos.length===0){
-
-     app.innerHTML=
-     `<div class="mensaje">
-       No hay partidos disponibles ahora.
-     </div>`;
-
-     return;
-   }
-
-   app.innerHTML =
-   partidos
-   .slice(0,3)
-   .map(p=>crearPartido(p.evento,p.liga))
-   .join("");
-
- }
- catch(error){
-
-   app.innerHTML=
-   `<div class="mensaje">
-     Actualizando marcadores...
-   </div>`;
-
- }
-}
-
-cargar();
-
-/* Actualización automática */
-setInterval(cargar,15000);
-
-</script>
-
-</body>
-</html>
+        <div class="fila">
