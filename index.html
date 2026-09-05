@@ -2,32 +2,41 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Marcador en Vivo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marcadores en Vivo</title>
 
 <style>
-html,body{
-  margin:0;
-  padding:0;
-  background:transparent;
-  font-family:Arial,sans-serif;
+html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: Arial, sans-serif;
 }
-.contenedor{
-  width:100%;
-  max-width:900px;
-  margin:auto;
+
+#marcadores {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
 }
 </style>
 </head>
 
 <body>
 
-<div class="contenedor">
+<div id="marcadores">
 
-  <div data-sportscore="tracker"
-       data-sport="football"
-       data-team="real-madrid">
-  </div>
+    <!-- LA LIGA -->
+    <div data-sportscore="tracker" data-sport="football" data-team="real-madrid"></div>
+    <div data-sportscore="tracker" data-sport="football" data-team="barcelona"></div>
+
+    <!-- PREMIER LEAGUE -->
+    <div data-sportscore="tracker" data-sport="football" data-team="arsenal"></div>
+    <div data-sportscore="tracker" data-sport="football" data-team="liverpool"></div>
+    <div data-sportscore="tracker" data-sport="football" data-team="chelsea"></div>
+    <div data-sportscore="tracker" data-sport="football" data-team="manchester-city"></div>
+    <div data-sportscore="tracker" data-sport="football" data-team="manchester-united"></div>
+    <div data-sportscore="tracker" data-sport="football" data-team="newcastle-united"></div>
+    <div data-sportscore="tracker" data-sport="football" data-team="aston-villa"></div>
 
 </div>
 
