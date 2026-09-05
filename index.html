@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marcador en Vivo</title>
+
+<style>
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  padding:0;
+  background:transparent;
+  font-family:Arial,sans-serif;
+  color:white;
+}
+
+#app{
+  width:760px;
+  padding:15px;
+}
+
+.partido{
+  background:rgba(12,15,22,.96);
+  border-radius:16px;
+  overflow:hidden;
+  margin-bottom:12px;
+  box-shadow:0 8px 25px rgba(0,0,0,.35);
+}
+
+.superior{
+  padding:8px 15px;
+  background:#171c27;
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  font-weight:bold;
+}
+
+.live{
+  color:#37e584;
+}
+
+.equipos{
+  display:grid;
+  grid-template-columns:1fr 110px 1fr;
+  align-items:center;
+  padding:15px;
+}
+
+.equipo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:bold;
+  font-size:17px;
+}
+
+.visitante{
+  justify-content:flex-end;
+  text-align:right;
+}
+
+.logo{
+  width:45px;
+  height:45px;
+  object-fit:contain;
+  background:white;
+  border-radius:50%;
+  padding:4px;
+}
+
+.resultado{
+  text-align:center;
+  font-size:34px;
+  font-weight:900;
+}
+
+.mensaje{
+  background:rgba(12,15,22,.95);
+  padding:18px;
+  border-radius:14px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+  <div class="mensaje">Cargando partidos...</div>
+</div>
+
+<script>
+
+const ligas = [
+ {id:"eng.1",nombre:"Premier League"},
+ {id:"esp.1",nombre:"LaLiga"},
+ {id:"ger.1",nombre:"Bundesliga"},
+ {id:"fra.1",nombre:"Ligue 1"}
+];
+
+const equiposPermitidos = {
+ "esp.1":["Real Madrid","Barcelona"],
+ "ger.1":["Bayern Munich"],
+ "fra.1":["Paris Saint-Germain","PSG"]
+};
+
+function permitido(evento,liga){
+
+ if(!equiposPermitidos[liga]) return true;
+
+ const equipos =
+ evento.competitions?.[0]?.competitors || [];
+
+ return equipos.some(e =>
+   equiposPermitidos[liga].some(nombre =>
+     (e.team?.displayName || "")
+       .toLowerCase()
+       .includes(nombre.toLowerCase())
+   )
+ );
+}
+
+function crearPartido(evento,nombreLiga){
+
+ const comp = evento.competitions[0];
+
+ const local =
+ comp.competitors.find(e=>e.homeAway==="home");
+
+ const visita =
+ comp.competitors.find(e=>e.homeAway==="away");
+
+ const estado = comp.status?.type?.state;
+
+ let textoEstado =
+ comp.status?.type?.shortDetail || "";
+
+ if(estado==="in"){
+   textoEstado =
+   "● EN VIVO " +
+   (comp.status?.displayClock || "");
+ }
+
+ return `
+ <div class="partido">
+
+   <div class="superior">
+     <span>${nombreLiga}</span>
+     <span class="${estado==="in"?"live":""}">
+       ${textoEstado}
+     </span>
+   </div>
+
+   <div class="equipos">
+
+     <div class="equipo">
+       <img class="logo"
+       src="${local?.team?.logo || ""}">
+       <span>
+       ${local?.team?.shortDisplayName ||
+         local?.team?.displayName || ""}
+       </span>
+     </div>
+
+     <div class="resultado">
+       ${local?.score ?? "-"}
+       -
+       ${visita?.score ?? "-"}
+     </div>
+
+     <div class="equipo visitante">
+       <span>
+       ${visita?.team?.shortDisplayName ||
+         visita?.team?.displayName || ""}
+       </span>
+
+       <img class="logo"
+       src="${visita?.team?.logo || ""}">
+     </div>
+
+   </div>
+
+ </div>
+ `;
+}
+
+async function cargar(){
+
+ const app=document.getElementById("app");
+
+ let partidos=[];
+
+ try{
+
+   for(const liga of ligas){
+
+     const url =
+     `https://site.api.espn.com/apis/site/v2/sports/soccer/${liga.id}/scoreboard`;
+
+     const respuesta =
+     await fetch(url,{cache:"no-store"});
+
+     if(!respuesta.ok) continue;
+
+     const datos =
+     await respuesta.json();
+
+     for(const evento of datos.events || []){
+
+       if(permitido(evento,liga.id)){
+
+         partidos.push({
+           evento,
+           liga:liga.nombre
+         });
+
+       }
+     }
+   }
+
+   partidos.sort((a,b)=>{
+
+     const ea =
+     a.evento.competitions[0]
+     .status.type.state;
+
+     const eb =
+     b.evento.competitions[0]
+     .status.type.state;
+
+     if(ea==="in" && eb!=="in") return -1;
+     if(eb==="in" && ea!=="in") return 1;
+
+     return new Date(a.evento.date) -
+            new Date(b.evento.date);
+   });
+
+   if(partidos.length===0){
+
+     app.innerHTML=
+     `<div class="mensaje">
+       No hay partidos disponibles ahora.
+     </div>`;
+
+     return;
+   }
+
+   app.innerHTML =
+   partidos
+   .slice(0,3)
+   .map(p=>crearPartido(p.evento,p.liga))
+   .join("");
+
+ }
+ catch(error){
+
+   app.innerHTML=
+   `<div class="mensaje">
+     Actualizando marcadores...
+   </div>`;
+
+ }
+}
+
+cargar();
+
+/* Actualización automática */
+setInterval(cargar,15000);
+
+</script>
+
+</body>
+</html>
